@@ -131,6 +131,6 @@ The third objective is to practice our usage of **Docker**. All the components o
 
 ### Management UI (0.5 pt)
 
-* You develop a web app (e.g. with express.js) that administrators can use to monitor and update your web infrastructure.
-* You find a way to control your Docker environment (list containers, start/stop containers, etc.) from the web app. For instance, you use the Dockerode npm module (or another Docker client library, in any of the supported languages).
+* You develop a web app (e.g. with express.js) that administrators can use to monitor and update your web infrastructure. For instance, you use the Dockerode npm module (or another Docker client library, in any of the supported languages).
+* Or you find another way (e.g. an existing tool) to control your Docker environment in a web UI (list containers, start/stop containers, etc. 
 * You have documented your configuration and your validation procedure in your report.
