@@ -129,7 +129,7 @@ RUN a2enmod proxy proxy_http
 RUN a2ensite 000-* 001-*
 ```
 
-On crée l'image à l'aide la commande `docker build -t res/apache_rp .^`
+On crée l'image à l'aide la commande `docker build -t res/apache_rp .`
 
 ### Fichiers de configuration
 
@@ -156,17 +156,17 @@ On crée l'image à l'aide la commande `docker build -t res/apache_rp .^`
 
 Comme demandé dans le podcast, les adresses IP sont en durs dans la configuration ce qui n'est pas idéal étant donné que les machines peuvent changer d'adresses au redémarrage avec docker et pourraient donc ne plus être accessible.
 
-### Lancement du container
+### Lancement des containers
 
 On lance le container du reverse proxy:
 
-`docker run -p 9091:3000 res/apache_rp`
+`docker run -d --name apache_rp -p 8080:80 res/apache_rp`
 
 On lance les deux autres containers sans port d'accès afin d'éviter de pouvoir y accéder:
 
-`sudo docker run -d --name apache_static res/apache_php`
+`docker run -d --name apache_static res/apache_php`
 
-`sudo docker run -d --name express_dynamic res/express_emails`
+`docker run -d --name express_dynamic res/express_emails`
 
 Les machines ne sont pas pas accessibles directement. (Sauf en tapant leurs adresses IP "docker" étant donné que mon OS est Linux et j'ai donc un accès direct aux machines.)
 
@@ -192,6 +192,117 @@ Cette image montre que la machine virtuelle de l'API n'est pas joignable en pass
 
 ## Step 4: AJAX requests with JQuery
 
+### Modification des fichiers Dockerfile
 
+Les fichiers Dockerfile ont été modifiés dans le but d'installer l'éditeur Emacs afin d'avoir un éditeur de texte puissant pour écrire du code.
+
+#### apache-php-image
+
+```
+FROM php:7.2-apache
+
+RUN apt-get update && apt-get install -y emacs
+
+COPY src/ /var/www/html/
+```
+
+On reconstruit ensuite l'image avec : `docker build -t res/apache_php .`
+
+#### express-image
+
+```
+FROM node:12.17.0
+COPY src /opt/app
+
+RUN apt-get update && apt-get install -y emacs
+
+CMD ["node", "/opt/app/index.js"]
+```
+
+On reconstruit ensuite l'image avec : `docker build -t res/express_emails .`
+
+#### apache-reverse-proxy
+
+```
+FROM php:7.2-apache
+COPY conf/ /etc/apache2
+
+RUN apt-get update && apt-get install -y emacs
+
+RUN a2enmod proxy proxy_http
+RUN a2ensite 000-* 001-*
+```
+
+On reconstruit ensuite l'image avec : `docker build -t res/apache_rp .`
+
+### Lancement des containers
+
+`docker run -d --name apache_rp -p 8080:80 res/apache_rp`
+
+`docker run -d --name apache_static res/apache_php`
+
+`docker run -d --name express_dynamic res/express_emails`
+
+On relance ensuite les machines virtuelles comme dans le Step 3. On ajoute ici le paramètre `--ip` dans le but de forcer docker à garder les adresses IP car elles avaient changé. 
+
+### Création du fichier emails.js
+
+Le script suivant, basé sur celui du podcast, permet de faire une requête GET pour recevoir sous forme JSON les objets e-mails définis lors de l'étape 2. Le script écrit dans un élément dont l'id est `upemail` et se ré-execute toutes les 2 secondes.
+
+```
+$(function(){
+    console.log("Loading emails");
+
+    function loadEmails(){
+        $.getJSON("/api/emails/", function(emails){
+            console.log(emails);
+            var message = "No data";
+
+            if(emails.length > 0){
+                var m = emails[0];
+                message = m.email + " on server " + m.domain + " with ip " + m.ip + " for Company " + m.company;
+            }
+	    
+            $("#upemail").text(message);
+        });
+    };
+
+    loadEmails();
+    setInterval(loadEmails, 2000);
+});
+```
+
+### Modification du fichier index.html
+
+Afin de charger le fichier de script précédent il est nécessaire de rajouter deux portions de code.
+
+La première est d'ordre visuel afin d'afficher les données:
+
+```
+<!-- Content Row -->
+          <div class="row">
+
+            <!-- Content Column -->
+            <div class="col-lg-12 mb-12">
+              <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                  <h6 class="m-0 font-weight-bold text-primary">Emails update</h6>
+                </div>
+                <div class="card-body">
+                  <h4 class="small font-weight-bold"><div id="upemail"></div></h4>
+                </div>
+              </div>
+	    </div>
+	  </div>
+```
+
+La partie la plus importante de ce code est la div dont l'id est `upemail` car c'est dans cet élément HTML que le script précédent va écrire les données.
+
+La deuxième sert à charger le script en lui même qui sera exécuté par le browser: 
+
+```
+  <! -- Custom script to load emails -->
+  <script src="js/emails.js"></script>
+```
 
 ## Step 5: Dynamic reverse proxy configuration
