@@ -1,3 +1,5 @@
+
+
 # RES - Labo HTTP Infrastructure
 
 Auteur : Lièvre Loïc
@@ -115,6 +117,81 @@ On remarque aussi que le container docker affiche les même étant donné que no
 
 ## Step 3: Reverse proxy with apache (static configuration)
 
+### Image docker
+
+On crée le fichier Dockerfile avec le contenu suivant afin de configurer notre image contenant httpd afin de l'installer en reverse proxy:
+
+```
+FROM php:7.2-apache
+COPY conf/ /etc/apache2
+
+RUN a2enmod proxy proxy_http
+RUN a2ensite 000-* 001-*
+```
+
+On crée l'image à l'aide la commande `docker build -t res/apache_rp .^`
+
+### Fichiers de configuration
+
+#### 000-default.conf
+
+```
+<VirtualHost *:80>
+</VirtualHost>
+```
+
+#### 001-reverse-proxy.conf
+
+```
+<VirtualHost *:80>
+	     ServerName demo.res.ch
+
+	     ProxyPass "/api/emails/" "http://172.17.0.3:3000/"
+	     ProxyPassReverse "/api/emails/" "http://172.17.0.3:3000/"
+
+	     ProxyPass "/" "http://172.17.0.2:80/"
+	     ProxyPassReverse "/" "http://172.17.0.2:80/"	     
+</VirtualHost>
+```
+
+Comme demandé dans le podcast, les adresses IP sont en durs dans la configuration ce qui n'est pas idéal étant donné que les machines peuvent changer d'adresses au redémarrage avec docker et pourraient donc ne plus être accessible.
+
+### Lancement du container
+
+On lance le container du reverse proxy:
+
+`docker run -p 9091:3000 res/apache_rp`
+
+On lance les deux autres containers sans port d'accès afin d'éviter de pouvoir y accéder:
+
+`sudo docker run -d --name apache_static res/apache_php`
+
+`sudo docker run -d --name express_dynamic res/express_emails`
+
+Les machines ne sont pas pas accessibles directement. (Sauf en tapant leurs adresses IP "docker" étant donné que mon OS est Linux et j'ai donc un accès direct aux machines.)
+
+On regarde que la machine n'est pas accessible en ne passant pas par le nom de domaine désigné dans le fichier de configuration `demo.res.ch` et donc apache passe par le fichier `000-default.conf`.
+
+![](images/s3_forbidden.png)
+
+Mais si on utilise le nom de domaine, on passe donc par le fichier `001-reverse-proxy.conf`.
+
+On distingue alors les deux cas, si on passe sur `/` on arrive sur le contenu HTML donné par la machine apache configurée pour servir le contenu statique.
+
+![](images/s3_demo_res.png)
+
+Si on passe par `/emails/*` on arrive sur le contenu généré par node js.
+
+![](images/s3_api_emails.png)
+
+Cette image montre que la machine virtuelle de l'API n'est pas joignable en passant par le port 3000 ou tourne l'application express :
+
+![](images/s3_demo_res_3000.png)
+
+
+
 ## Step 4: AJAX requests with JQuery
+
+
 
 ## Step 5: Dynamic reverse proxy configuration
