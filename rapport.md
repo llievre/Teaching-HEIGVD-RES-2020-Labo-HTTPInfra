@@ -379,3 +379,21 @@ On lance quelques containers sans noms afin de montrer que les adresses sont dif
 Évidement, les adresses IP sont à changer en fonction des containers que nous voulons utiliser.
 
 ![](images/s5_containers.png)
+
+## Additional steps
+
+### Management UI
+
+Il existe une interface déjà faite appelée portainer qui s'installe très facilement et qui est très pratique.
+
+Toute la documentation se trouve ici : [https://www.portainer.io/installation/](https://www.portainer.io/installation/)
+
+Il na fallu taper seulement 2 commandes pour l'installer:
+
+`docker volume create portainer_data`
+
+`docker run -d -p 8000:8000 -p 9000:9000 --name=portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer`
+
+On peut ensuite y voir nos containers tourner après avoir choisi un mot de passe en se connectant en http sur le port 9000 :
+
+![](images/sa_management.png)
