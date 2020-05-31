@@ -245,9 +245,11 @@ On reconstruit ensuite l'image avec : `docker build -t res/apache_rp .`
 
 On relance ensuite les machines virtuelles comme dans le Step 3. On ajoute ici le paramètre `--ip` dans le but de forcer docker à garder les adresses IP car elles avaient changé. 
 
+Cette configuration d'avoir un reverse-proxy est nécessaire car sinon des problèmes de `same-origin policy` se poserait. En effet, les navigateurs embarquent une sécurité afin de limiter la manière dont un script ou une page peut interagir avec une autre ressources chargée ailleurs.
+
 ### Création du fichier emails.js
 
-Le script suivant, basé sur celui du podcast, permet de faire une requête GET pour recevoir sous forme JSON les objets e-mails définis lors de l'étape 2. Le script écrit dans un élément dont l'id est `upemail` et se ré-execute toutes les 2 secondes.
+Le script suivant, basé sur celui du podcast, permet de faire une requête GET pour recevoir sous forme JSON les objets e-mails définis lors de l'étape 2. Le script écrit dans un élément dont l'id est `upemail` et se ré-exécute toutes les 2 secondes.
 
 ```
 $(function(){
@@ -305,4 +307,75 @@ La deuxième sert à charger le script en lui même qui sera exécuté par le br
   <script src="js/emails.js"></script>
 ```
 
+![](images/s4_emails_update.png)
+
 ## Step 5: Dynamic reverse proxy configuration
+
+Afin de passer de manière dynamique les adresses IP des deux containers et ré-écrire la configuration apache au démarrage du reverse-proxy, il est nécessaire d'écrire des scripts afin de récupérer des variables passées en paramètres à Docker et en faire des variable environnement avec bash pour les récupérer en PHP pour écrire la configuration.
+
+### Script bash apache2-foreground
+
+Le script récupère les adresses IP passées en paramètres par Docker et les passe au script PHP dans le but d'écrire une nouvelle configuration. 
+
+```
+#!/bin/bash
+set -e
+
+#RES
+echo "Setup for RES lab"
+echo "Static app URL  : $STATIC_APP"
+echo "Dynamic app URL : $DYNAMIC_APP"
+
+php /var/apache2/templates/config-template.php > /etc/apache2/sites-available/001-reverse-proxy.conf
+
+rm -f /var/run/apache2/apache2.pid
+exec apachectl -D FOREGROUND
+```
+
+### Modification du Dockerfile du reverse proxy
+
+On ajoute la copie des fichiers de configuration et de template.
+
+```
+FROM php:7.2-apache
+
+RUN apt-get update && apt-get install -y emacs
+
+COPY apache2-foreground /usr/local/bin/
+COPY templates /var/apache2/templates
+
+COPY conf/ /etc/apache2
+
+RUN a2enmod proxy proxy_http
+RUN a2ensite 000-* 001-*
+```
+
+### Création du script PHP config-template.php 
+
+Le script est exécuté par le script bash dans le but d'écrire une nouvelle configuration dynamique pour apache. Le script récupère les adresses IP depuis les variables d'environnement et écrire la configuration du fichier 001-reverse-proxy.conf.
+
+```
+<?php
+	$dynamic_app = getenv('DYNAMIC_APP');
+	$static_app = getenv('STATIC_APP');
+?>
+<VirtualHost *:80>
+	     ServerName demo.res.ch
+	     
+	     ProxyPass '/api/emails/' 'http://<?php print "$dynamic_app"?>/'
+	     ProxyPassReverse '/api/emails/' 'http://<?php print "$dynamic_app"?>/'
+	     
+	     ProxyPass '/' 'http://<?php print "$static_app"?>/'
+	     ProxyPassReverse '/' 'http://<?php print "$static_app"?>/'
+</VirtualHost>
+```
+
+### Lancement des containers
+
+On lance quelques containers sans noms afin de montrer que les adresses sont différentes d'avant puis on lance les containers nommés apache_static et express_dynamic  comme avant. Ensuite on démarre le container apache_rp avec la commande suivante en lui spécifiant les adresses IP :
+
+`docker run -d -e STATIC_APP=172.17.0.8:80 -e DYNAMIC_APP=172.17.0.9:3000 --name apache_rp -p 8080:80 res/apache_rp`
+
+Évidement, les adresses IP sont à changer en fonction des containers que nous voulons utiliser.
+
+![](images/s5_containers.png)
