@@ -33,6 +33,8 @@ On peut voir le résultat en se rendant sur l'adresse `localhost:9090`.
 
 Il est ensuite possible de lancer d'autres containers en utilisant d'autres ports libres.
 
+Les fichiers de configuration apache sont localisés sous `/etc/apache2/`. On peut aller interagir avec les fichiers à l'aide de la commande `sudo docker run -it res/apache_php /bin/bash` pour ouvrir un terminal directement dans le container.
+
 ### Template
 
 Le template installé est `Sb Admin 2` téléchargeable sur le site de bootstrap sur [https://startbootstrap.com/themes/sb-admin-2/](https://startbootstrap.com/themes/sb-admin-2/).
@@ -184,9 +186,9 @@ Si on passe par `/emails/*` on arrive sur le contenu généré par node js.
 
 ![](images/s3_api_emails.png)
 
-Cette image montre que la machine virtuelle de l'API n'est pas joignable en passant par le port 3000 ou tourne l'application express :
+Cette image montre que la machine virtuelle de l'API n'est pas joignable en passant par le port 3000 et 80 mais seulement 8080 ou se trouve le proxy :
 
-![](images/s3_demo_res_3000.png)
+![](images/s3_demo_curl.png)
 
 
 
@@ -307,7 +309,9 @@ La deuxième sert à charger le script en lui même qui sera exécuté par le br
   <script src="js/emails.js"></script>
 ```
 
-![](images/s4_emails_update.png)
+On remarque dans cette image dans la console qu'il y a des appels ajax effectués sur /api/emails/:
+
+![](images/s4_update_emails.png)
 
 ## Step 5: Dynamic reverse proxy configuration
 
@@ -472,6 +476,14 @@ Cette image tirée des logs (`docker service logs stackdemo_dynamic -f`) permet 
 
 ![](images/sa_swarm.png)
 
+## Load balancing: round-robin vs sticky sessions
+
+docker-compose utilise round-robin de base. 
+
+On remarque dans cette image le tournus toujours identique entre trois conteneurs démarrés avec docker-compose :
+
+![](images/sa_rr.png)
+
 ## Sources externes au cours
 
 https://gist.github.com/evanscottgray/8571828
@@ -485,3 +497,7 @@ https://medium.com/@benoittellier3/automatic-load-balancing-for-your-docker-comp
 https://pspdfkit.com/blog/2018/how-to-use-docker-compose-to-run-multiple-instances-of-a-service-in-development/
 
 https://docs.docker.com/engine/swarm/stack-deploy/
+
+https://blog.scottlogic.com/2016/08/30/docker-1-12-swarm-mode-round-robin.html
+
+https://medium.com/@lherrera/poor-mans-load-balancing-with-docker-2be014983e5
