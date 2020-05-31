@@ -8,6 +8,16 @@ Date : 28.05.2020
 
 ## Introduction
 
+Tous les steps ont été réalisés sur `Ubuntu 20.04 LTS`  avec `Docker version 19.03.8, build afacb8b7f0`.
+
+Ce rapport final est visible dans la branche master et non pas individuellement pour chaque étape, néanmoins chaque branche possède la version du code correct pour la tester si besoin.
+
+L'étape 5 est visible dans la branche `fb-dynamic-configuration`.
+
+Les étapes additionnelles ont été toutes effectuées dans la même branche `fb-additionnal-steps`.
+
+Le rendu final code et rapport est sur la branche `master`.
+
 ## Step 1: Static HTTP server with apache httpd
 
 ### Image docker
@@ -483,6 +493,8 @@ docker-compose utilise round-robin de base.
 On remarque dans cette image le tournus toujours identique entre trois conteneurs démarrés avec docker-compose :
 
 ![](images/sa_rr.png)
+
+ 
 
 ## Sources externes au cours
 
