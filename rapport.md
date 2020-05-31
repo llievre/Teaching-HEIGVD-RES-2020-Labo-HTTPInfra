@@ -442,3 +442,46 @@ On remarque ici que les deux containers peuvent envoyer des données:
 
 ![](images/sa_load_balancing_d1d2.png)
 
+## Dynamic cluster management
+
+On utilise docker swarm en plus de docker compose pour arriver à nos fins. On va chercher à balancer notre configuration docker-compose dans un stack docker.
+
+#### Création d'un essaim
+
+On crée un essaim avec la commande suivante:
+
+`docker swarm init --advertise-addr 127.0.0.1`
+
+#### Déploiement
+
+On déploie le fichier docker-compose créé plus haut dans l'essaim. Cela va créer une instance de chacun des containers définis dans le fichier.
+
+`docker stack deploy --compose-file docker-compose.yml stackdemo`
+
+#### Réplication
+
+On réplique ensuite le service avec la commande suivante:
+
+`docker service update --replicas=5 stackdemo_dynamic`
+
+Le nom du service change évidemment en fonction de ce que l'on veut répliquer.
+
+Il est aussi possible de dupliquer le système sur plusieurs nœuds en utilisant des registres et des nœuds différents.
+
+Cette image tirée des logs (`docker service logs stackdemo_dynamic -f`) permet de voir que les données dynamiques ont été tirée de deux stack différents (`stackdemo_dynamic.1` et `stackdemo_dynamic.3`)
+
+![](images/sa_swarm.png)
+
+## Sources externes au cours
+
+https://gist.github.com/evanscottgray/8571828
+
+https://docs.docker.com/get-started/swarm-deploy/
+
+https://www.ionos.fr/digitalguide/serveur/know-how/docker-orchestration-avec-swarm-et-compose/
+
+https://medium.com/@benoittellier3/automatic-load-balancing-for-your-docker-compose-services-aa6b96f20d20
+
+https://pspdfkit.com/blog/2018/how-to-use-docker-compose-to-run-multiple-instances-of-a-service-in-development/
+
+https://docs.docker.com/engine/swarm/stack-deploy/
