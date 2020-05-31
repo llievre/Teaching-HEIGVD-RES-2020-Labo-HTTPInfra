@@ -388,7 +388,7 @@ Il existe une interface déjà faite appelée portainer qui s'installe très fac
 
 Toute la documentation se trouve ici : [https://www.portainer.io/installation/](https://www.portainer.io/installation/)
 
-Il na fallu taper seulement 2 commandes pour l'installer:
+Il n'a fallu taper seulement 2 commandes pour l'installer:
 
 `docker volume create portainer_data`
 
@@ -397,3 +397,48 @@ Il na fallu taper seulement 2 commandes pour l'installer:
 On peut ensuite y voir nos containers tourner après avoir choisi un mot de passe en se connectant en http sur le port 9000 :
 
 ![](images/sa_management.png)
+
+### Load balancing: multiple server nodes
+
+Pour pouvoir faire du load balancing facilement, on installe Docker compose : [https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
+
+#### Configuration docker-compose
+
+On crée un fichier `docker-compose.yml` dans lequel on renseigne nos trois configurations. La première, `static`, désigne notre conteneur `apache_php` qui fournira les ressources statiques. La deuxième est `dynamic` qui est l'image `express_emails` qui contient les ressources dynamiques. La troisième, `proxy` est notre image `apache_rp` qui sert de proxy et pour laquelle on définit un port pour le joindre qui dépend des deux autres.
+
+```
+version: '3'
+services:
+  static:
+    image: res/apache_php
+  dynamic:
+    image: res/express_emails
+  proxy:
+    image: res/apache_rp
+    ports:
+      - 8080:80
+    depends_on:
+      - static
+      - dynamic
+```
+
+#### Lancement des containers
+
+On lance 1 container de chaque avec la commande suivante dans le dossier contenant le fichier .yml:
+
+`docker-compose up -d`
+
+On peut ensuite augmenter le nombre de container avec les commandes suivantes:
+
+`sudo docker-compose scale dynamic=3`
+
+`sudo docker-compose scale static=3`
+
+Le nombre 3 est remplaçable par le nombre de containers désiré.
+
+![](images/sa_docker_compose_up_scale.png)
+
+On remarque ici que les deux containers peuvent envoyer des données:
+
+![](images/sa_load_balancing_d1d2.png)
+

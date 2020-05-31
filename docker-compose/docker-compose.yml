@@ -1,0 +1,13 @@
+version: '3'
+services:
+  static:
+    image: res/apache_php
+  dynamic:
+    image: res/express_emails
+  proxy:
+    image: res/apache_rp
+    ports:
+      - 8080:80
+    depends_on:
+      - static
+      - dynamic

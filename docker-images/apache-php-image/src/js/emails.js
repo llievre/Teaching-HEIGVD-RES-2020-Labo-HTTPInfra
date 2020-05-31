@@ -8,7 +8,7 @@ $(function(){
 
             if(emails.length > 0){
                 var m = emails[0];
-                message = m.email + " on server " + m.domain + " with ip " + m.ip + " for Company " + m.company;
+                message = m.email + " on domain " + m.domain + " with ip " + m.ip + " for Company " + m.company;
             }
 	    
             $("#upemail").text(message);
